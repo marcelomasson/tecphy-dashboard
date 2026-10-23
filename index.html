@@ -1,87 +1,93 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
 <title>Painel Tecphy</title>
+<link rel="icon" type="image/svg+xml" href="icone-tecphy.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ============ Design tokens ============ */
 :root{
-  --bg:#eef1ef;
-  --bg-soft:#e6ebe8;
+  --bg:#f2f4f8;
+  --bg-soft:#e9edf4;
   --surface:#ffffff;
-  --surface-2:#f4f6f4;
-  --border:#d7ded9;
-  --text:#152321;
-  --text-muted:#5b6b67;
-  --text-faint:#8b9793;
-  --accent:#0e7a6c;
-  --accent-soft:#d9efe9;
-  --accent-2:#b5652e;
-  --accent-2-soft:#f4e3d5;
-  --pos:#2f8f5b;
-  --pos-soft:#e2f3e8;
+  --surface-2:#f4f6fa;
+  --border:#d9dfe9;
+  --text:#25262a;
+  --text-muted:#5c5f66;
+  --text-faint:#8b8f97;
+  --accent:#2b4ba1;
+  --accent-soft:#e3e9f7;
+  --accent-2:#4fa82c;
+  --accent-2-soft:#e6f4de;
+  --brand-green:#62b832;
+  --brand-teal:#34a46f;
+  --brand-blue:#2b4ba1;
+  --brand-gray:#434346;
+  --brand-grad:linear-gradient(90deg,#62b832 0%,#34a46f 45%,#2b4ba1 100%);
+  --pos:#2f9b4f;
+  --pos-soft:#e3f4e7;
   --neg:#c43f3f;
   --neg-soft:#fbe6e6;
   --warn:#c98a1f;
   --warn-soft:#f8ecd6;
-  --shadow: 0 1px 2px rgba(20,30,28,.06), 0 6px 20px -8px rgba(20,30,28,.12);
-  --sidebar-bg:#152321;
-  --sidebar-text:#c8d6d2;
-  --sidebar-text-dim:#7d938d;
-  --sidebar-active:#1d3330;
+  --shadow: 0 1px 2px rgba(25,35,70,.06), 0 6px 20px -8px rgba(25,35,70,.14);
+  --sidebar-bg:#1b2236;
+  --sidebar-text:#c9cfdd;
+  --sidebar-text-dim:#8790a6;
+  --sidebar-active:#2a3350;
   font-family:"IBM Plex Sans", sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0f1513;
-    --bg-soft:#121a18;
-    --surface:#172120;
-    --surface-2:#1b2624;
-    --border:#26332f;
-    --text:#e8edeb;
-    --text-muted:#93a39e;
-    --text-faint:#65746f;
-    --accent:#35c9b4;
-    --accent-soft:#173630;
-    --accent-2:#e3934f;
-    --accent-2-soft:#3a2a1a;
-    --pos:#4fd08a;
+    --bg:#11141c;
+    --bg-soft:#151925;
+    --surface:#1a1f2c;
+    --surface-2:#1f2533;
+    --border:#2b3243;
+    --text:#e8eaf0;
+    --text-muted:#9aa1b2;
+    --text-faint:#6b7285;
+    --accent:#7b9bf0;
+    --accent-soft:#1f2a48;
+    --accent-2:#7ccb55;
+    --accent-2-soft:#1f3320;
+    --pos:#5fd08a;
     --pos-soft:#153327;
     --neg:#f0647a;
     --neg-soft:#3a1a20;
     --warn:#e3b352;
     --warn-soft:#3a2f14;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -10px rgba(0,0,0,.5);
-    --sidebar-bg:#0b1211;
-    --sidebar-text:#c8d6d2;
-    --sidebar-text-dim:#5f726c;
-    --sidebar-active:#16211f;
+    --sidebar-bg:#0c0f17;
+    --sidebar-text:#c9cfdd;
+    --sidebar-text-dim:#6b7285;
+    --sidebar-active:#1d2436;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0f1513;
-  --bg-soft:#121a18;
-  --surface:#172120;
-  --surface-2:#1b2624;
-  --border:#26332f;
-  --text:#e8edeb;
-  --text-muted:#93a39e;
-  --text-faint:#65746f;
-  --accent:#35c9b4;
-  --accent-soft:#173630;
-  --accent-2:#e3934f;
-  --accent-2-soft:#3a2a1a;
-  --pos:#4fd08a;
+  --bg:#11141c;
+  --bg-soft:#151925;
+  --surface:#1a1f2c;
+  --surface-2:#1f2533;
+  --border:#2b3243;
+  --text:#e8eaf0;
+  --text-muted:#9aa1b2;
+  --text-faint:#6b7285;
+  --accent:#7b9bf0;
+  --accent-soft:#1f2a48;
+  --accent-2:#7ccb55;
+  --accent-2-soft:#1f3320;
+  --pos:#5fd08a;
   --pos-soft:#153327;
   --neg:#f0647a;
   --neg-soft:#3a1a20;
   --warn:#e3b352;
   --warn-soft:#3a2f14;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -10px rgba(0,0,0,.5);
-  --sidebar-bg:#0b1211;
-  --sidebar-text:#c8d6d2;
-  --sidebar-text-dim:#5f726c;
-  --sidebar-active:#16211f;
+  --sidebar-bg:#0c0f17;
+  --sidebar-text:#c9cfdd;
+  --sidebar-text-dim:#6b7285;
+  --sidebar-active:#1d2436;
 }
 
 *{box-sizing:border-box;}
@@ -97,10 +103,12 @@ button{font-family:inherit;}
 #app{display:flex;min-height:100vh;}
 
 .sidebar{
-  width:216px;flex:none;background:var(--sidebar-bg);color:var(--sidebar-text);
+  width:236px;flex:none;background:var(--sidebar-bg);color:var(--sidebar-text);
   display:flex;flex-direction:column;padding:20px 12px;gap:2px;position:sticky;top:0;height:100vh;overflow-y:auto;
 }
-.brand{padding:6px 10px 18px;}
+.brand{padding:4px 8px 16px;margin-bottom:6px;position:relative;}
+.brand img{width:100%;max-width:204px;display:block;}
+.brand::after{content:"";display:block;height:3px;border-radius:3px;background:var(--brand-grad);margin-top:14px;}
 .brand .name{font-family:"Barlow Semi Condensed";font-weight:700;font-size:22px;color:#fff;letter-spacing:.02em;}
 .brand .tag{font-size:10.5px;color:var(--sidebar-text-dim);text-transform:uppercase;letter-spacing:.12em;margin-top:2px;}
 .navgroup-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--sidebar-text-dim);padding:14px 10px 6px;}
@@ -109,12 +117,13 @@ button{font-family:inherit;}
   color:var(--sidebar-text);text-align:left;cursor:pointer;font-size:13.5px;font-weight:500;
 }
 .navbtn:hover{background:#ffffff10;}
-.navbtn.active{background:var(--sidebar-active);color:#fff;}
+.navbtn.active{background:var(--sidebar-active);color:#fff;box-shadow:inset 3px 0 0 var(--brand-green);}
 .navbtn .ic{width:16px;text-align:center;opacity:.9;font-size:14px;}
 .sidebar-foot{margin-top:auto;padding:10px;font-size:10.5px;color:var(--sidebar-text-dim);}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column;}
 .topbar{
+  box-shadow:inset 0 -1px 0 var(--border);
   position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border);
   padding:14px 26px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
 }
@@ -225,11 +234,11 @@ table.tx-table tbody tr:hover{background:color-mix(in srgb, var(--surface) 60%, 
 .acao-hero .txt strong{font-size:15px;}
 .acao-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
 .chip{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:99px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:500;}
-.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.chip.on{background:var(--brand-grad);border-color:var(--accent);color:#fff;}
 .acao-list{display:flex;flex-direction:column;gap:12px;}
 .acard{background:var(--surface);border:1px solid var(--border);border-left:5px solid var(--warn);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
 .acard.crit{border-left-color:var(--neg);}
-.acard.mix{border-left-color:var(--accent-2);}
+.acard.mix{border-left-color:var(--accent);}
 .acard.unica{border-left-color:var(--text-faint);}
 .acard-head{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px 16px;cursor:pointer;align-items:start;}
 .acard-head:hover{background:var(--surface-2);}
@@ -261,8 +270,8 @@ table.tx-table tbody tr:hover{background:color-mix(in srgb, var(--surface) 60%, 
 <div id="app">
   <nav class="sidebar">
     <div class="brand">
-      <div class="name">TECPHY</div>
-      <div class="tag">Painel Comercial</div>
+      <img src="logo-tecphy-branco.svg" alt="Tecphy — Smart Phytoactives">
+      <div class="tag" style="margin-top:10px;">Painel Comercial</div>
     </div>
     <div class="navgroup-label">Ação</div>
     <button class="navbtn" data-tab="acao"><span class="ic">&#9888;</span> Ação Imediata <span id="navAcaoCount" class="badge neg" style="margin-left:auto;"></span></button>
@@ -1332,7 +1341,7 @@ function acaoSugerida(c){
 const STATUS_INFO = {
   parou:{lbl:'Parou de comprar', cls:'crit', badge:'neg'},
   atrasado:{lbl:'Pedido atrasado', cls:'', badge:'warn'},
-  mix:{lbl:'Mix perdido', cls:'mix', badge:'acc2'},
+  mix:{lbl:'Mix perdido', cls:'mix', badge:'acc'},
   unica:{lbl:'Compra única', cls:'unica', badge:'acc'},
   migrou:{lbl:'Migrou de unidade', cls:'unica', badge:'acc'},
 };
