@@ -1702,9 +1702,9 @@ function diagnosticoClientes(){
     const byProd = new Map();
     for(const r of vendas){
       const k = familiaProduto(r.produto);
-      if(!byProd.has(k)) byProd.set(k, {nome:r.produto.replace(/\s*\|.*$/,'').trim(), unid:r.unid, datas:new Set(), venda:0, qtd:0, ult:0, ultPreco:0});
+      if(!byProd.has(k)) byProd.set(k, {nome:r.produto.replace(/\s*\|.*$/,'').trim(), unid:r.unid, datas:new Set(), venda:0, qtd:0, ult:0, ultPreco:0, res:0, rows:[]});
       const p = byProd.get(k); const t = parseBrDate(r.data).getTime();
-      p.datas.add(t); p.venda += r.venda; p.qtd += r.qtd;
+      p.datas.add(t); p.venda += r.venda; p.qtd += r.qtd; p.res += r.resultado; p.rows.push(r);
       if(t>=p.ult){ p.ult=t; p.ultPreco=r.vendaUnit; }
     }
     const produtos = Array.from(byProd.values()).map(p=>{
@@ -1803,11 +1803,29 @@ function renderAcao(){
   document.getElementById('acaoList').innerHTML = vis.length ? vis.map(c=>{
     const si = STATUS_INFO[c.status];
     const maxM = Math.max(...c.porMes,1);
-    const prodRows = c.produtos.map(p=>{
+    const cliFat = c.produtos.reduce((a,p)=>a+p.venda,0), cliRes = c.produtos.reduce((a,p)=>a+p.res,0);
+    const prodRows = c.produtos.map((p,pi)=>{
       const parou = p.abandonado || c.status==='parou' || c.status==='atrasado';
-      return `<tr><td class="left name">${esc(p.nome)}${p.abandonado?' <span class="badge neg">deixou de comprar</span>':''}</td>
-        <td class="num">${p.compras}×</td><td class="num">${BRL2.format(p.qtd)} ${esc(p.unid)}</td><td class="num">${money2(p.ultPreco)}</td>
-        <td class="num">${money(p.venda)}</td><td class="num ${parou&&p.diasP>90?'prod-stop':''}">${fmtDate(new Date(p.ult))}<span class="sec">há ${diasTxt(p.diasP)}</span></td></tr>`;
+      const txs = p.rows.slice().sort((a,b)=>parseBrDate(b.data)-parseBrDate(a.data));
+      const ult = txs[0], prim = txs[txs.length-1];
+      const mUlt = ult.venda? ult.resultado/ult.venda : 0;
+      const varPreco = prim.vendaUnit? (ult.vendaUnit-prim.vendaUnit)/prim.vendaUnit : 0;
+      const precoTxt = txs.length>1 && Math.abs(varPreco)>0.005 ? `<span class="sec ${varPreco>0?'var-up':'var-dn'}">${varPreco>0?'▲':'▼'} ${pct(Math.abs(varPreco))} vs 1ª compra</span>` : '';
+      const hist = txs.map(t=>`<tr><td class="left">${fmtDate(parseBrDate(t.data))}</td><td class="left">${esc(t.documento)}</td><td class="left">${esc(shortName(t.vendedor,26))}</td>
+        <td class="num">${BRL2.format(t.qtd)} ${esc(t.unid)}</td><td class="num">${money2(t.vendaUnit)}</td><td class="num">${money(t.venda)}</td>
+        <td class="num">${money2(t.custoUnit)}</td><td class="num">${money(t.icms+t.pis)}</td><td class="num">${money(t.comissao+t.frete)}</td>
+        <td class="num">${money(t.resultado)}</td><td class="num">${t.venda? marginBadge(t.resultado/t.venda):'—'}</td></tr>`).join('');
+      return `<tr class="grp-row ap-row" data-pi="${pi}">
+        <td class="left name"><span class="chevron">▸</span> ${esc(p.nome)}${p.abandonado?' <span class="badge neg">deixou de comprar</span>':''}<span class="sec">${p.compras} pedidos · ${BRL2.format(p.qtd)} ${esc(p.unid)} no total</span></td>
+        <td class="num">${money(p.venda)}<span class="sec">${pct(cliFat?p.venda/cliFat:0)} do cliente</span></td>
+        <td class="num">${marginBadge(p.venda?p.res/p.venda:0)}<span class="sec">${money(p.res)}</span></td>
+        <td class="num ${parou&&p.diasP>90?'prod-stop':''}">${fmtDate(new Date(p.ult))}<span class="sec">há ${diasTxt(p.diasP)} · ${esc(ult.documento)}</span></td>
+        <td class="num">${BRL2.format(ult.qtd)} ${esc(ult.unid)}<span class="sec">${money(ult.venda)}</span></td>
+        <td class="num">${money2(ult.vendaUnit)}${precoTxt}</td>
+        <td class="num">${marginBadge(mUlt)}<span class="sec">${money(ult.resultado)}</span></td></tr>
+      <tr class="tx-subrow pivot-hidden" data-parent="${pi}"><td colspan="7"><table class="tx-table"><thead><tr>
+        <th class="left">Data</th><th class="left">NF</th><th class="left">Vendedor</th><th>Qtd</th><th>Preço unit.</th><th>Valor</th><th>Custo unit.</th><th>ICMS+PIS/COF</th><th>Comissão+Frete</th><th>Resultado</th><th>Margem %</th>
+        </tr></thead><tbody>${hist}</tbody></table></td></tr>`;
     }).join('');
     const open = acaoState.abertos.has(c.cod);
     return `<div class="acard ${si.cls} ${open?'open':''}" data-cod="${esc(c.cod)}">
@@ -1820,9 +1838,20 @@ function renderAcao(){
       <div class="acard-body">
         <div class="timeline">${c.porMes.map((v,i)=>`<span class="${v?'':'z'}" style="height:${v? Math.max(8, v/maxM*100):6}%" title="${mesLbl(c.meses[i])}: ${money(v)}"></span>`).join('')}</div>
         <div class="tl-lbl"><span>${mesLbl(c.meses[0])}</span><span>Faturamento mensal — últimos 24 meses</span><span>${mesLbl(c.meses[23])}</span></div>
-        <div class="table-wrap"><table><thead><tr><th class="left">O que comprava</th><th>Pedidos</th><th>Qtd total</th><th>Último preço</th><th>Faturamento</th><th>Última compra</th></tr></thead><tbody>${prodRows}</tbody></table></div>
+        <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);margin:4px 0 12px;">
+          <div class="kpi"><div class="lbl">Faturamento total</div><div class="val">${money(cliFat)}</div></div>
+          <div class="kpi"><div class="lbl">Margem total</div><div class="val">${money(cliRes)}</div></div>
+          <div class="kpi"><div class="lbl">Margem %</div><div class="val">${pct(cliFat?cliRes/cliFat:0)}</div></div>
+          <div class="kpi"><div class="lbl">Ticket médio / pedido</div><div class="val">${money(c.compras? c.fatTotal/c.compras:0)}</div></div>
+        </div>
+        <p class="foot-note" style="margin:0 0 6px;">Clique num produto para ver todas as compras dele: data, NF, vendedor, preço, custo, impostos, comissão/frete e margem de cada pedido.</p>
+        <div class="table-wrap"><table><thead><tr><th class="left">O que comprava</th><th>Faturamento</th><th>Margem total</th><th>Última compra</th><th>Qtd últ. compra</th><th>Preço últ. compra</th><th>Margem últ. compra</th></tr></thead><tbody>${prodRows}</tbody></table></div>
       </div></div>`;
   }).join('') : '<div class="empty">Nenhum cliente nesta categoria.</div>';
+  document.querySelectorAll('#acaoList .ap-row').forEach(r=>r.addEventListener('click',()=>{
+    r.classList.toggle('expanded');
+    r.parentElement.querySelectorAll(`.tx-subrow[data-parent="${r.dataset.pi}"]`).forEach(x=>x.classList.toggle('pivot-hidden'));
+  }));
   document.querySelectorAll('#acaoList .acard-head').forEach(h=>h.addEventListener('click',()=>{
     const card=h.parentElement, cod=card.dataset.cod;
     card.classList.toggle('open');
