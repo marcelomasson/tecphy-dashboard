@@ -217,6 +217,36 @@ table.tx-table td.left{padding-left:34px;}
 table.tx-table tbody tr:last-child td{border-bottom:none;}
 table.tx-table tbody tr:hover{background:color-mix(in srgb, var(--surface) 60%, transparent);}
 
+
+/* ===== Ação imediata ===== */
+.acao-hero{border-radius:14px;padding:18px 20px;margin-bottom:18px;background:var(--neg-soft);border:1px solid color-mix(in srgb,var(--neg) 35%,transparent);display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+.acao-hero .big{font-family:"Barlow Semi Condensed";font-weight:700;font-size:30px;color:var(--neg);line-height:1;}
+.acao-hero .txt{flex:1;min-width:240px;font-size:13px;}
+.acao-hero .txt strong{font-size:15px;}
+.acao-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:99px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:500;}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.acao-list{display:flex;flex-direction:column;gap:12px;}
+.acard{background:var(--surface);border:1px solid var(--border);border-left:5px solid var(--warn);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.acard.crit{border-left-color:var(--neg);}
+.acard.mix{border-left-color:var(--accent-2);}
+.acard.unica{border-left-color:var(--text-faint);}
+.acard-head{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px 16px;cursor:pointer;align-items:start;}
+.acard-head:hover{background:var(--surface-2);}
+.acard-title{font-weight:600;font-size:14.5px;}
+.acard-meta{font-size:11.5px;color:var(--text-muted);margin-top:3px;}
+.acard-nums{text-align:right;}
+.acard-nums .v{font-family:"IBM Plex Mono";font-weight:600;font-size:16px;}
+.acard-nums .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);}
+.acard-acao{margin:0 16px 12px;padding:9px 12px;border-radius:8px;background:var(--surface-2);font-size:12.5px;}
+.acard-acao b{color:var(--accent);}
+.acard-body{display:none;padding:0 16px 16px;}
+.acard.open .acard-body{display:block;}
+.timeline{display:flex;gap:2px;align-items:flex-end;height:34px;margin:6px 0 2px;}
+.timeline span{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px;opacity:.85;}
+.timeline span.z{background:var(--border);}
+.tl-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--text-faint);margin-bottom:10px;}
+.prod-stop{color:var(--neg);font-weight:600;}
 .foot-note{font-size:11px;color:var(--text-faint);margin-top:18px;line-height:1.6;}
 .empty{padding:30px;text-align:center;color:var(--text-faint);font-size:12.5px;}
 
@@ -234,6 +264,8 @@ table.tx-table tbody tr:hover{background:color-mix(in srgb, var(--surface) 60%, 
       <div class="name">TECPHY</div>
       <div class="tag">Painel Comercial</div>
     </div>
+    <div class="navgroup-label">Ação</div>
+    <button class="navbtn" data-tab="acao"><span class="ic">&#9888;</span> Ação Imediata <span id="navAcaoCount" class="badge neg" style="margin-left:auto;"></span></button>
     <div class="navgroup-label">Visão Geral</div>
     <button class="navbtn" data-tab="resumo"><span class="ic">&#9679;</span> Resumo</button>
     <button class="navbtn" data-tab="cruzamento"><span class="ic">&#9670;</span> Cruzamento</button>
@@ -265,6 +297,15 @@ table.tx-table tbody tr:hover{background:color-mix(in srgb, var(--surface) 60%, 
       </div>
     </div>
     <div class="content" id="content">
+
+      <!-- AÇÃO IMEDIATA -->
+      <section class="section" id="sec-acao">
+        <div id="acaoHero"></div>
+        <div class="kpi-row" id="acaoKpis"></div>
+        <div class="acao-toolbar" id="acaoChips"></div>
+        <div class="acao-list" id="acaoList"></div>
+        <p class="foot-note">Como ler: para cada cliente calculamos o <strong>ciclo de recompra</strong> (intervalo mediano entre as compras dele) e comparamos com os dias desde a última compra, na data-base dos dados. <strong>Parou</strong> = mais de 2× o ciclo sem comprar (mín. 90 dias). <strong>Atrasado</strong> = 1,3× a 2× o ciclo. <strong>Mix perdido</strong> = cliente ainda ativo, mas deixou de comprar um produto que comprava com regularidade. <strong>Faturamento em risco</strong> = o que o cliente faturou nos 12 meses que antecederam a última compra. Esta tela usa todo o histórico (ignora os filtros de ano e mês); os filtros de vendedor e tipo continuam valendo.</p>
+      </section>
 
       <!-- RESUMO -->
       <section class="section" id="sec-resumo">
@@ -450,7 +491,7 @@ const ENGMAT = DATA.engMat.map(a=>{ const o={}; MK.forEach((k,i)=>o[k]=a[i]); re
 document.getElementById('periodoLbl').textContent = DATA.meta.periodo;
 
 // ---------- global filter state ----------
-const state = { vendedor:'', tipo:'', ano:'', mes:'', tab:'resumo' };
+const state = { vendedor:'', tipo:'', ano:'', mes:'', tab:'acao' };
 
 function uniqueSorted(arr){ return Array.from(new Set(arr)).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR')); }
 
@@ -481,7 +522,7 @@ function filteredSales(opts){
     if(state.vendedor && s.vendedor!==state.vendedor) return false;
     if(state.tipo && s.tipo!==state.tipo) return false;
     if(!opts.ignoreAno && state.ano && String(s.ano)!==String(state.ano)) return false;
-    if(state.mes){ const mm = s.anoMes ? s.anoMes.split('-')[1] : null; if(mm !== MES_LABEL_TO_NUM[state.mes]) return false; }
+    if(!opts.ignoreMes && state.mes){ const mm = s.anoMes ? s.anoMes.split('-')[1] : null; if(mm !== MES_LABEL_TO_NUM[state.mes]) return false; }
     return true;
   });
 }
@@ -539,7 +580,7 @@ function buildExpandableTable(tableEl, groups, colCount, headerHtml, rowHtmlFn, 
 function txSorted(rows){ return rows.slice().sort((a,b)=>(parseBrDate(b.data)?.getTime()||0)-(parseBrDate(a.data)?.getTime()||0)); }
 
 // ---------- tab switching ----------
-const TAB_TITLES = {resumo:'Resumo', cruzamento:'Cruzamento', cliprod:'Cliente × Produto', clientes:'Clientes', produtos:'Produtos', vendedores:'Vendedores', estoque:'Estoque', engenharia:'Engenharia (Receitas & Custos)'};
+const TAB_TITLES = {acao:'Ação Imediata — Clientes que pararam de comprar', resumo:'Resumo', cruzamento:'Cruzamento', cliprod:'Cliente × Produto', clientes:'Clientes', produtos:'Produtos', vendedores:'Vendedores', estoque:'Estoque', engenharia:'Engenharia (Receitas & Custos)'};
 document.querySelectorAll('.navbtn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     state.tab = btn.dataset.tab;
@@ -1187,9 +1228,180 @@ document.getElementById('themeToggle').addEventListener('click', ()=>{
   refreshAll();
 });
 
+
+// ---------- AÇÃO IMEDIATA: diagnóstico de clientes que pararam de comprar ----------
+const REF_DATE = parseBrDate(DATA.meta.gerado) || new Date();
+const DAY = 86400000;
+const acaoState = { filtro:'todos', abertos:new Set() };
+function median(a){ if(!a.length) return 0; const b=a.slice().sort((x,y)=>x-y); const m=Math.floor(b.length/2); return b.length%2? b[m] : (b[m-1]+b[m])/2; }
+function familiaProduto(n){
+  let t = n.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  t = t.replace(/\|.*$/,'').replace(/\[[^\]]*\]/g,' ').replace(/\([^)]*\)?/g,' ');
+  t = t.replace(/\S*\d\S*/g,' ');
+  t = t.replace(/\b(SC|BD|PO|BB|CX|LIQ|LIQUIDO|BALDE|BOMB|GRANEL|IBC|NOVO|INATIVO|INATVO|INATIVAR|V01|S|FINALIZAR|EMBALAGENS|SUPLEMENTO)\b/g,' ');
+  t = t.replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  return t || n;
+}
+function grupoCliente(n){ return n.split('|')[0].trim().toUpperCase(); }
+function diasTxt(d){ return d===1? '1 dia' : Math.round(d)+' dias'; }
+
+function diagnosticoClientes(){
+  const rows = filteredSales({ignoreAno:true, ignoreMes:true});
+  const byCli = new Map();
+  for(const r of rows){
+    if(!byCli.has(r.clienteCod)) byCli.set(r.clienteCod, []);
+    byCli.get(r.clienteCod).push(r);
+  }
+  const out = [];
+  byCli.forEach((rs, cod)=>{
+    const vendas = rs.filter(r=>r.venda>0 && r.qtd>0);
+    if(!vendas.length) return;
+    const devol = rs.filter(r=>r.venda<0);
+    const datas = Array.from(new Set(vendas.map(r=>parseBrDate(r.data).getTime()))).sort((a,b)=>a-b);
+    const ultima = datas[datas.length-1];
+    const dias = (REF_DATE.getTime()-ultima)/DAY;
+    const intervalos = []; for(let i=1;i<datas.length;i++) intervalos.push((datas[i]-datas[i-1])/DAY);
+    const ciclo = intervalos.length? Math.max(15, median(intervalos)) : null;
+    const fat12 = vendas.filter(r=>parseBrDate(r.data).getTime() > ultima-365*DAY).reduce((s,r)=>s+r.venda,0);
+    const fatTotal = vendas.reduce((s,r)=>s+r.venda,0);
+    const ultRow = vendas.slice().sort((a,b)=>parseBrDate(b.data)-parseBrDate(a.data))[0];
+
+    // produtos
+    const byProd = new Map();
+    for(const r of vendas){
+      const k = familiaProduto(r.produto);
+      if(!byProd.has(k)) byProd.set(k, {nome:r.produto.replace(/\s*\|.*$/,'').trim(), unid:r.unid, datas:new Set(), venda:0, qtd:0, ult:0, ultPreco:0});
+      const p = byProd.get(k); const t = parseBrDate(r.data).getTime();
+      p.datas.add(t); p.venda += r.venda; p.qtd += r.qtd;
+      if(t>=p.ult){ p.ult=t; p.ultPreco=r.vendaUnit; }
+    }
+    const produtos = Array.from(byProd.values()).map(p=>{
+      const ds = Array.from(p.datas).sort((a,b)=>a-b);
+      const iv=[]; for(let i=1;i<ds.length;i++) iv.push((ds[i]-ds[i-1])/DAY);
+      const cicloP = iv.length? Math.max(15, median(iv)) : null;
+      const diasP = (REF_DATE.getTime()-p.ult)/DAY;
+      // produto abandonado: cliente continuou comprando outras coisas depois
+      const abandonado = ds.length>=2 && (ultima - p.ult)/DAY >= 45 && diasP > Math.max(2*(cicloP||60), 90);
+      return {...p, compras:ds.length, cicloP, diasP, abandonado};
+    }).sort((a,b)=>b.venda-a.venda);
+
+    let status='ok', sev=0;
+    if(ciclo){
+      const ratio = dias/ciclo;
+      if(ratio>=2 && dias>=90){ status='parou'; sev=3; }
+      else if(ratio>=1.3 && dias>=45){ status='atrasado'; sev=2; }
+    } else if(dias>=120){ status='unica'; sev=0.5; }
+    const mixPerdido = produtos.filter(p=>p.abandonado);
+    if(status==='ok' && mixPerdido.length){ status='mix'; sev=1; }
+    if(status==='ok') return;
+    const valorMix = mixPerdido.reduce((s,p)=>s+p.venda*Math.min(1, 365/Math.max(1,(p.ult-Array.from(p.datas)[0])/DAY+ (p.cicloP||60))),0);
+    const risco = status==='mix' ? valorMix : fat12;
+
+    // timeline 24 meses
+    const meses=[]; const refY=REF_DATE.getFullYear(), refM=REF_DATE.getMonth();
+    for(let i=23;i>=0;i--){ const d=new Date(refY, refM-i, 1); meses.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
+    const porMes = meses.map(m=>vendas.filter(r=>r.anoMes===m).reduce((s,r)=>s+r.venda,0));
+
+    out.push({cod, nome:rs[0].cliente, vendedor:ultRow.vendedor, status, sev, dias, ciclo, compras:datas.length,
+      ultima:new Date(ultima), primeira:new Date(datas[0]), fat12, fatTotal, risco, produtos, mixPerdido, devol, meses, porMes});
+  });
+  // mesmo grupo econômico (nome antes do "|"): se outra unidade segue comprando, não é perda — é migração
+  const ultimaPorGrupo = new Map();
+  byCli.forEach((rs)=>{ const g=grupoCliente(rs[0].cliente); const vs=rs.filter(r=>r.venda>0);
+    if(!vs.length) return; const u=Math.max(...vs.map(r=>parseBrDate(r.data).getTime()));
+    const cur=ultimaPorGrupo.get(g); if(!cur||u>cur.u) ultimaPorGrupo.set(g,{u, nome:rs[0].cliente}); });
+  out.forEach(c=>{
+    if(c.status!=='parou' && c.status!=='atrasado' && c.status!=='unica') return;
+    const g = ultimaPorGrupo.get(grupoCliente(c.nome));
+    if(g && g.nome!==c.nome && (g.u - c.ultima.getTime())/DAY > 30){ c.status='migrou'; c.sev=0.5; c.migrouPara=g; }
+  });
+  out.sort((a,b)=> (b.sev>=1)-(a.sev>=1) || b.risco-a.risco);
+  return out;
+}
+
+function acaoSugerida(c){
+  const top = c.produtos[0];
+  const devTxt = c.devol.length? ` Atenção: houve devolução em ${fmtDate(parseBrDate(c.devol[c.devol.length-1].data))} — investigar se foi problema de qualidade/entrega.` : '';
+  if(c.status==='parou') return `<b>Ligar esta semana.</b> Cliente comprava a cada ~${diasTxt(c.ciclo)} e está há ${diasTxt(c.dias)} sem pedido. Descobrir o motivo (preço, concorrente, troca de nutricionista, problema técnico) e levar proposta de retomada com ${esc(top.nome)}.${devTxt}`;
+  if(c.status==='atrasado') return `<b>Contato de reposição.</b> O pedido era esperado há ~${diasTxt(c.dias-c.ciclo)}. Confirmar estoque do cliente e puxar o pedido de ${esc(top.nome)} antes que ele compre de outro.${devTxt}`;
+  if(c.status==='mix') return `<b>Recuperar mix.</b> Cliente segue comprando, mas abandonou ${c.mixPerdido.map(p=>esc(p.nome)).join(', ')}. Perguntar o que substituiu e oferecer reposição/condição.${devTxt}`;
+  if(c.status==='migrou') return `<b>Confirmar migração.</b> Esta unidade parou, mas o grupo segue comprando por <b>${esc(c.migrouPara.nome)}</b> (última compra ${fmtDate(new Date(c.migrouPara.u))}). Validar se o volume foi todo transferido ou se parte se perdeu.${devTxt}`;
+  return `<b>Converter em recorrente.</b> Fez ${c.compras} compra há ${diasTxt(c.dias)} e não voltou. Fazer pós-venda: resultado do teste, ajuste de dose e próximo pedido.${devTxt}`;
+}
+
+const STATUS_INFO = {
+  parou:{lbl:'Parou de comprar', cls:'crit', badge:'neg'},
+  atrasado:{lbl:'Pedido atrasado', cls:'', badge:'warn'},
+  mix:{lbl:'Mix perdido', cls:'mix', badge:'acc2'},
+  unica:{lbl:'Compra única', cls:'unica', badge:'acc'},
+  migrou:{lbl:'Migrou de unidade', cls:'unica', badge:'acc'},
+};
+
+function renderAcao(){
+  const lista = diagnosticoClientes();
+  const urg = lista.filter(c=>c.status==='parou'||c.status==='atrasado');
+  const riscoUrg = urg.reduce((s,c)=>s+c.risco,0);
+  const nParou = lista.filter(c=>c.status==='parou').length;
+  const nAtr = lista.filter(c=>c.status==='atrasado').length;
+  const nMix = lista.filter(c=>c.status==='mix').length;
+  const nUni = lista.filter(c=>c.status==='unica').length;
+  const nMig = lista.filter(c=>c.status==='migrou').length;
+  const riscoMix = lista.filter(c=>c.status==='mix').reduce((s,c)=>s+c.risco,0);
+  const nb = document.getElementById('navAcaoCount'); if(nb) nb.textContent = urg.length || '';
+
+  const top3 = urg.slice(0,3).map(c=>esc(c.nome.split(' ').slice(0,3).join(' '))).join(', ');
+  document.getElementById('acaoHero').innerHTML = urg.length ? `
+    <div class="acao-hero"><div class="big">${money(riscoUrg)}</div>
+    <div class="txt"><strong>de faturamento anual em risco em ${urg.length} clientes</strong> que pararam ou atrasaram a recompra (dados até ${DATA.meta.gerado}).<br>Prioridade máxima: ${top3}.</div></div>` :
+    `<div class="callout warn"><span class="ic">✓</span><span>Nenhum cliente com recompra atrasada no filtro atual.</span></div>`;
+
+  document.getElementById('acaoKpis').innerHTML = [
+    {l:'Pararam de comprar', v:nParou, s:'> 2× o ciclo, mín. 90 dias'},
+    {l:'Pedido atrasado', v:nAtr, s:'1,3× a 2× o ciclo'},
+    {l:'Mix perdido', v:nMix, s:money(riscoMix)+'/ano em produtos abandonados'},
+    {l:'Compra única sem retorno', v:nUni, s:'> 120 dias sem 2º pedido'},
+  ].map(k=>`<div class="kpi"><div class="lbl">${k.l}</div><div class="val">${k.v}</div><div class="sub">${k.s}</div></div>`).join('');
+
+  const filtros = [['todos','Todos'],['parou','Parou ('+nParou+')'],['atrasado','Atrasado ('+nAtr+')'],['mix','Mix perdido ('+nMix+')'],['unica','Compra única ('+nUni+')'],['migrou','Migrou de unidade ('+nMig+')']];
+  document.getElementById('acaoChips').innerHTML = filtros.map(([k,l])=>`<button class="chip ${acaoState.filtro===k?'on':''}" data-f="${k}">${l}</button>`).join('');
+  document.querySelectorAll('#acaoChips .chip').forEach(b=>b.addEventListener('click',()=>{acaoState.filtro=b.dataset.f; renderAcao();}));
+
+  const vis = lista.filter(c=> acaoState.filtro==='todos' ? (c.status!=='unica' && c.status!=='migrou') : c.status===acaoState.filtro);
+  const mesLbl = m=>{const p=m.split('-'); return MESES_PT[parseInt(p[1])-1]+'/'+p[0].slice(2);};
+  document.getElementById('acaoList').innerHTML = vis.length ? vis.map(c=>{
+    const si = STATUS_INFO[c.status];
+    const maxM = Math.max(...c.porMes,1);
+    const prodRows = c.produtos.map(p=>{
+      const parou = p.abandonado || c.status==='parou' || c.status==='atrasado';
+      return `<tr><td class="left name">${esc(p.nome)}${p.abandonado?' <span class="badge neg">deixou de comprar</span>':''}</td>
+        <td class="num">${p.compras}×</td><td class="num">${BRL2.format(p.qtd)} ${esc(p.unid)}</td><td class="num">${money2(p.ultPreco)}</td>
+        <td class="num">${money(p.venda)}</td><td class="num ${parou&&p.diasP>90?'prod-stop':''}">${fmtDate(new Date(p.ult))}<span class="sec">há ${diasTxt(p.diasP)}</span></td></tr>`;
+    }).join('');
+    const open = acaoState.abertos.has(c.cod);
+    return `<div class="acard ${si.cls} ${open?'open':''}" data-cod="${esc(c.cod)}">
+      <div class="acard-head">
+        <div><div class="acard-title">${esc(c.nome)} <span class="badge ${si.badge}">${si.lbl}</span></div>
+        <div class="acard-meta">Vendedor: ${esc(c.vendedor)} · Última compra ${fmtDate(c.ultima)} (há ${diasTxt(c.dias)})${c.ciclo?` · Comprava a cada ~${diasTxt(c.ciclo)}`:''} · ${c.compras} pedidos desde ${fmtDate(c.primeira)}</div></div>
+        <div class="acard-nums"><div class="v">${money(c.risco)}</div><div class="l">${c.status==='mix'?'mix em risco/ano':'fat. 12m em risco'}</div></div>
+      </div>
+      <div class="acard-acao">${acaoSugerida(c)}</div>
+      <div class="acard-body">
+        <div class="timeline">${c.porMes.map((v,i)=>`<span class="${v?'':'z'}" style="height:${v? Math.max(8, v/maxM*100):6}%" title="${mesLbl(c.meses[i])}: ${money(v)}"></span>`).join('')}</div>
+        <div class="tl-lbl"><span>${mesLbl(c.meses[0])}</span><span>Faturamento mensal — últimos 24 meses</span><span>${mesLbl(c.meses[23])}</span></div>
+        <div class="table-wrap"><table><thead><tr><th class="left">O que comprava</th><th>Pedidos</th><th>Qtd total</th><th>Último preço</th><th>Faturamento</th><th>Última compra</th></tr></thead><tbody>${prodRows}</tbody></table></div>
+      </div></div>`;
+  }).join('') : '<div class="empty">Nenhum cliente nesta categoria.</div>';
+  document.querySelectorAll('#acaoList .acard-head').forEach(h=>h.addEventListener('click',()=>{
+    const card=h.parentElement, cod=card.dataset.cod;
+    card.classList.toggle('open');
+    if(card.classList.contains('open')) acaoState.abertos.add(cod); else acaoState.abertos.delete(cod);
+  }));
+}
+
 // ---------- render dispatcher ----------
 function renderTab(tab){
-  if(tab==='resumo') renderResumo();
+  if(tab==='acao') renderAcao();
+  else if(tab==='resumo') renderResumo();
   else if(tab==='cruzamento') renderCruzamento();
   else if(tab==='cliprod') renderCliProd();
   else if(tab==='clientes') renderClientes();
@@ -1200,7 +1412,7 @@ function renderTab(tab){
 }
 function refreshAll(){ renderTab(state.tab); }
 
-renderTab('resumo');
+document.querySelector('.navbtn[data-tab="acao"]').click();
 })();
 </script>
 
