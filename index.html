@@ -194,6 +194,7 @@ td .sec{display:block;font-size:10.5px;color:var(--text-faint);font-weight:400;}
   display:flex;flex-direction:column;
 }
 .drawer.open{transform:translateX(0);}
+.drawer.wide{width:min(900px,96vw);}
 .drawer-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;}
 .drawer-head .titles{flex:1;min-width:0;}
 .drawer-head h3{margin:0 0 3px;font-size:19px;}
@@ -1270,7 +1271,7 @@ function renderVendedores(){
   arr.sort((a,b)=>b.venda-a.venda);
   const total = arr.reduce((s,v)=>s+v.venda,0);
 
-  renderRanking('vend', arr, null, ['venda','resultado','margemPct'], renderVendedores);
+  renderRanking('vend', arr, v=>openVendedorDrawer(v.nome), ['venda','resultado','margemPct'], renderVendedores);
 
   const getters = [v=>v.nome, v=>v.venda, v=>v.resultado, v=>v.margemPct, v=>v.count, v=>v.venda/total];
   sortRows(arr, vendedoresSort.col, vendedoresSort.dir, getters);
@@ -1282,7 +1283,96 @@ function renderVendedores(){
     `<td class="num">${pct(v.margemPct)}</td>`,
     `<td class="num">${v.count}</td>`,
     `<td class="num">${pct(total? v.venda/total:0)}</td>`,
-  ]), null);
+  ]), (i)=> openVendedorDrawer(arr[i].nome));
+}
+
+// ---------- Drawer do vendedor: o que vende e para quem ----------
+const vendDrawerState = { visao:'cliente' };
+function nestedTable(tableEl, headerHtml, colCount, groups, emptyMsg){
+  if(!groups.length){ tableEl.innerHTML = `<tbody><tr><td class="empty">${emptyMsg}</td></tr></tbody>`; return; }
+  let h = '<thead><tr>'+headerHtml+'</tr></thead><tbody>';
+  groups.forEach((g,gi)=>{
+    h += `<tr class="grp-row" data-idx="${gi}">${g.cells}</tr>`;
+    h += `<tr class="tx-subrow pivot-hidden" data-parent="${gi}"><td colspan="${colCount}"><table class="tx-table"><thead><tr>${g.childHeader}</tr></thead><tbody>${g.children.join('')}</tbody></table></td></tr>`;
+  });
+  tableEl.innerHTML = h + '</tbody>';
+  tableEl.querySelectorAll('.grp-row').forEach(r=>r.addEventListener('click',()=>{
+    r.classList.toggle('expanded');
+    tableEl.querySelectorAll(`.tx-subrow[data-parent="${r.dataset.idx}"]`).forEach(x=>x.classList.toggle('pivot-hidden'));
+  }));
+}
+function lastDateOf(rs){ return rs.reduce((mx,r)=>{ const d=parseBrDate(r.data); return (d&&(!mx||d>mx))?d:mx; }, null); }
+
+function openVendedorDrawer(nome){
+  const rows = filteredSales().filter(r=>r.vendedor===nome);
+  const fat = rows.reduce((s,r)=>s+r.venda,0), res = rows.reduce((s,r)=>s+r.resultado,0);
+  const nCli = new Set(rows.filter(r=>r.venda>0).map(r=>r.clienteCod)).size;
+  const nProd = new Set(rows.filter(r=>r.venda>0).map(r=>familiaProduto(r.produto))).size;
+  const nfs = new Set(rows.filter(r=>r.venda>0).map(r=>r.documento)).size;
+  // status de recompra (mesma lógica da Ação Imediata)
+  const diag = new Map(); try{ diagnosticoClientes().forEach(c=>diag.set(c.cod,c)); }catch(e){}
+  const stBadge = cod=>{ const c=diag.get(cod); if(!c) return '<span class="badge pos">ativo</span>'; const si=STATUS_INFO[c.status]; return `<span class="badge ${si.badge}">${si.lbl}</span>`; };
+  // linha do tempo (24 meses, todo o histórico do vendedor, respeitando filtro de tipo)
+  const hist = filteredSales({ignoreAno:true, ignoreMes:true}).filter(r=>r.vendedor===nome);
+  const meses=[]; for(let i=23;i>=0;i--){ const d=new Date(REF_DATE.getFullYear(), REF_DATE.getMonth()-i, 1); meses.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')); }
+  const porMes = meses.map(m=>hist.filter(r=>r.anoMes===m).reduce((s,r)=>s+r.venda,0)); const maxM=Math.max(...porMes,1);
+  const mesLbl = m=>{const p=m.split('-'); return MESES_PT[parseInt(p[1])-1]+'/'+p[0].slice(2);};
+
+  const drawer = document.getElementById('drawer'); drawer.classList.add('wide');
+  document.getElementById('drawerTitle').textContent = nome;
+  document.getElementById('drawerMeta').textContent = `Vendedor · ${nCli} clientes · ${nProd} produtos · ${nfs} NFs no período filtrado`;
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="kpi-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
+      <div class="kpi"><div class="lbl">Faturamento</div><div class="val">${money(fat)}</div></div>
+      <div class="kpi"><div class="lbl">Margem</div><div class="val">${money(res)}</div></div>
+      <div class="kpi"><div class="lbl">Margem %</div><div class="val">${pct(fat?res/fat:0)}</div></div>
+      <div class="kpi"><div class="lbl">Ticket / NF</div><div class="val">${money(nfs?fat/nfs:0)}</div></div>
+    </div>
+    <div class="timeline">${porMes.map((v,i)=>`<span class="${v?'':'z'}" style="height:${v? Math.max(8, v/maxM*100):6}%" title="${mesLbl(meses[i])}: ${money(v)}"></span>`).join('')}</div>
+    <div class="tl-lbl"><span>${mesLbl(meses[0])}</span><span>Faturamento mensal do vendedor — últimos 24 meses</span><span>${mesLbl(meses[23])}</span></div>
+    <div class="acao-toolbar" id="vdChips">
+      <button class="chip ${vendDrawerState.visao==='cliente'?'on':''}" data-v="cliente">Para quem vende</button>
+      <button class="chip ${vendDrawerState.visao==='produto'?'on':''}" data-v="produto">O que vende</button>
+      <input class="search-input" id="vdSearch" placeholder="Buscar cliente ou produto..." style="margin-left:auto;">
+    </div>
+    <p class="foot-note" style="margin:0 0 8px;" id="vdHint"></p>
+    <div class="table-wrap"><table id="vdTable"></table></div>`;
+
+  const build = ()=>{
+    const q = (document.getElementById('vdSearch').value||'').toLowerCase();
+    const tbl = document.getElementById('vdTable');
+    const CH = '<th class="left">%NAME%</th><th>Qtd</th><th>Preço médio</th><th>Faturamento</th><th>Margem %</th><th>Última compra</th>';
+    const child = (nm, rs)=>{ const v=rs.reduce((s,r)=>s+r.venda,0), rr=rs.reduce((s,r)=>s+r.resultado,0), qt=rs.reduce((s,r)=>s+r.qtd,0);
+      return `<tr><td class="left">${esc(nm)}</td><td class="num">${BRL2.format(qt)} ${esc(rs[0].unid)}</td><td class="num">${money2(qt?v/qt:0)}</td><td class="num">${money(v)}</td><td class="num">${v?marginBadge(rr/v):'—'}</td><td class="num">${fmtDate(lastDateOf(rs))}</td></tr>`; };
+    if(vendDrawerState.visao==='cliente'){
+      document.getElementById('vdHint').textContent = 'Clique num cliente para ver os produtos que ele compra deste vendedor. O selo mostra a situação de recompra (mesma regra da Ação Imediata).';
+      const byC = aggBy(rows, r=>r.clienteCod);
+      let groups = Array.from(byC.entries()).map(([cod,a])=>({cod, nome:a.rows[0].cliente, a})).sort((x,y)=>y.a.venda-x.a.venda);
+      if(q) groups = groups.filter(g=> g.nome.toLowerCase().includes(q) || g.a.rows.some(r=>r.produto.toLowerCase().includes(q)));
+      nestedTable(tbl, '<th class="left">Cliente</th><th>Situação</th><th>Produtos</th><th>Faturamento</th><th>% do vendedor</th><th>Margem %</th><th>Última compra</th>', 7,
+        groups.map(g=>{ const byP = aggBy(g.a.rows, r=>familiaProduto(r.produto));
+          return { cells:`<td class="left name"><span class="chevron">▸</span> ${esc(g.nome)}</td><td class="num">${stBadge(g.cod)}</td><td class="num">${byP.size}</td><td class="num">${money(g.a.venda)}</td><td class="num">${pct(fat?g.a.venda/fat:0)}</td><td class="num">${marginBadge(g.a.venda?g.a.resultado/g.a.venda:0)}</td><td class="num">${fmtDate(lastDateOf(g.a.rows))}</td>`,
+            childHeader: CH.replace('%NAME%','Produto'),
+            children: Array.from(byP.values()).sort((x,y)=>y.venda-x.venda).map(p=>child(p.rows[0].produto.replace(/\s*\|.*$/,''), p.rows)) }; }),
+        'Nenhuma venda deste vendedor no filtro atual.');
+    } else {
+      document.getElementById('vdHint').textContent = 'Clique num produto para ver para quais clientes este vendedor o vende.';
+      const byP = aggBy(rows, r=>familiaProduto(r.produto));
+      let groups = Array.from(byP.values()).map(a=>({nome:a.rows[0].produto.replace(/\s*\|.*$/,''), tipo:a.rows[0].tipo, a})).sort((x,y)=>y.a.venda-x.a.venda);
+      if(q) groups = groups.filter(g=> g.nome.toLowerCase().includes(q) || g.a.rows.some(r=>r.cliente.toLowerCase().includes(q)));
+      nestedTable(tbl, '<th class="left">Produto</th><th>Clientes</th><th>Qtd</th><th>Faturamento</th><th>% do vendedor</th><th>Margem %</th><th>Última venda</th>', 7,
+        groups.map(g=>{ const byC = aggBy(g.a.rows, r=>r.clienteCod);
+          return { cells:`<td class="left name"><span class="chevron">▸</span> ${esc(g.nome)}<span class="sec">${esc(g.tipo)}</span></td><td class="num">${byC.size}</td><td class="num">${BRL2.format(g.a.qtd)} ${esc(g.a.rows[0].unid)}</td><td class="num">${money(g.a.venda)}</td><td class="num">${pct(fat?g.a.venda/fat:0)}</td><td class="num">${marginBadge(g.a.venda?g.a.resultado/g.a.venda:0)}</td><td class="num">${fmtDate(lastDateOf(g.a.rows))}</td>`,
+            childHeader: CH.replace('%NAME%','Cliente'),
+            children: Array.from(byC.values()).sort((x,y)=>y.venda-x.venda).map(c=>child(c.rows[0].cliente, c.rows)) }; }),
+        'Nenhuma venda deste vendedor no filtro atual.');
+    }
+  };
+  document.querySelectorAll('#vdChips .chip').forEach(b=>b.addEventListener('click',()=>{
+    vendDrawerState.visao=b.dataset.v; document.querySelectorAll('#vdChips .chip').forEach(x=>x.classList.toggle('on', x===b)); build(); }));
+  document.getElementById('vdSearch').addEventListener('input', build);
+  build();
+  openDrawer();
 }
 
 // ---------- Cruzamento (pivot) ----------
@@ -1544,8 +1634,8 @@ function renderSortableTable(id, headers, sortState, onSort, bodyRows, onRowClic
 function toggleSort(sortState, col){ if(sortState.col===col) sortState.dir*=-1; else {sortState.col=col; sortState.dir = col===0?1:-1;} }
 
 // ---------- drawer ----------
-function openDrawer(){ document.getElementById('overlay').classList.add('open'); document.getElementById('drawer').classList.add('open'); }
-function closeDrawer(){ document.getElementById('overlay').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
+function openDrawer(){ if(!document.getElementById('drawerTitle').dataset.keepWide){}  document.getElementById('overlay').classList.add('open'); document.getElementById('drawer').classList.add('open'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('wide');  document.getElementById('overlay').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click', closeDrawer);
 document.getElementById('drawerClose').addEventListener('click', closeDrawer);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
